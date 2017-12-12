@@ -1,0 +1,17 @@
+torch
+torch.nn
+numpy
+torch.autograd.Variable
+torch.optim
+PIL
+PIL.Image
+matplotlib.pyplot
+torchvision.transforms
+torchvision.models
+copy
+
+install opencv-python
+
+Gatys:
+each (Content, Style) need a train
+训练的是input 而不是filter的参数
