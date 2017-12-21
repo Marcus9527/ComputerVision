@@ -28,6 +28,8 @@ def check_paths(args):
 
 
 def train(args):
+    # make sure each time we train, if args.seed stays the same, then
+    # the random number we get is same as last time we train.
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
@@ -38,22 +40,28 @@ def train(args):
         transforms.Resize(args.image_size),
         transforms.CenterCrop(args.image_size),
         transforms.ToTensor(),
-        transforms.Lambda(lambda x: x.mul(255))
+        transforms.Lambda(lambda x: x.mul(255))  # 0-1 to 0-255
     ])
+    # note the order: give where the images at; load the images and transform; give the batch size
     train_dataset = datasets.ImageFolder(args.dataset, transform)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size)
 
+    # TODO: in transformernet
     transformer = TransformerNet()
     optimizer = Adam(transformer.parameters(), args.lr)
     mse_loss = torch.nn.MSELoss()
 
+    # TODO: relus in vgg16
     vgg = Vgg16(requires_grad=False)
+
     style_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Lambda(lambda x: x.mul(255))
     ])
     style = utils.load_image(args.style_image, size=args.style_size)
     style = style_transform(style)
+
+    # repeat the style tensor 4 times
     style = style.repeat(args.batch_size, 1, 1, 1)
 
     if args.cuda:
@@ -64,6 +72,7 @@ def train(args):
     style_v = Variable(style)
     style_v = utils.normalize_batch(style_v)
     features_style = vgg(style_v)
+    # to determine style loss, make use of gram matrix
     gram_style = [utils.gram_matrix(y) for y in features_style]
 
     for e in range(args.epochs):
@@ -74,12 +83,13 @@ def train(args):
         for batch_id, (x, _) in enumerate(train_loader):
             n_batch = len(x)
             count += n_batch
-            optimizer.zero_grad()
+            optimizer.zero_grad()  # pytorch accumulates gradients, making them zero for each minibatch
             x = Variable(x)
             if args.cuda:
                 x = x.cuda()
 
-            y = transformer(x)
+            # forward pass
+            y = transformer(x)  # after transformer - y
 
             y = utils.normalize_batch(y)
             x = utils.normalize_batch(x)
@@ -87,6 +97,7 @@ def train(args):
             features_y = vgg(y)
             features_x = vgg(x)
 
+            # TODO: mse_loss of which relu could be modified
             content_loss = args.content_weight * mse_loss(features_y.relu2_2, features_x.relu2_2)
 
             style_loss = 0.
@@ -96,7 +107,11 @@ def train(args):
             style_loss *= args.style_weight
 
             total_loss = content_loss + style_loss
-            total_loss.backward()
+
+            # backward pass
+            total_loss.backward()  # this simply computes the gradients for each learnable parameters
+
+            # update weights
             optimizer.step()
 
             agg_content_loss += content_loss.data[0]
