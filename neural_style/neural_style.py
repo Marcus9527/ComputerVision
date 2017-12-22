@@ -72,7 +72,7 @@ def train(args):
     style_v = Variable(style)
     style_v = utils.normalize_batch(style_v)
     features_style = vgg(style_v)
-    # to determine style loss, make use of gram matrix
+    # to determine style loss, make use of gram matrix for each relu output
     gram_style = [utils.gram_matrix(y) for y in features_style]
 
     for e in range(args.epochs):

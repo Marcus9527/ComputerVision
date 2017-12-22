@@ -17,7 +17,7 @@ def save_image(filename, data):
     img = Image.fromarray(img)
     img.save(filename)
 
-
+# could take the mean of several style images
 def gram_matrix(y):
     (b, ch, h, w) = y.size()
     features = y.view(b, ch, w * h)

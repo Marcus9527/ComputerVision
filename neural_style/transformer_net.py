@@ -1,5 +1,9 @@
 import torch
 
+# batch size
+# number of channels
+# kernel size
+# number of layers
 class TransformerNet(torch.nn.Module):
     def __init__(self):
         super(TransformerNet, self).__init__()
