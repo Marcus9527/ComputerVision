@@ -59,21 +59,31 @@ def train(args):
         transforms.Lambda(lambda x: x.mul(255))
     ])
     style = utils.load_image(args.style_image, size=args.style_size)
+    style2 = utils.load_image(args.style_image2, size=args.style_size)
     style = style_transform(style)
+    style2 = style_transform(style2)
 
     # repeat the style tensor 4 times
     style = style.repeat(args.batch_size, 1, 1, 1)
+    style2 = style2.repeat(args.batch_size, 1, 1, 1)
 
     if args.cuda:
         transformer.cuda()
         vgg.cuda()
         style = style.cuda()
+        style2 = style2.cuda()
+
 
     style_v = Variable(style)
     style_v = utils.normalize_batch(style_v)
     features_style = vgg(style_v)
+    style_v2 = Variable(style2)
+    style_v2 = utils.normalize_batch(style_v2)
+    features_style2 = vgg(style_v2)
     # to determine style loss, make use of gram matrix
     gram_style = [utils.gram_matrix(y) for y in features_style]
+    gram_style2 = [utils.gram_matrix(y) for y in features_style2]
+
 
     for e in range(args.epochs):
         transformer.train()
@@ -101,9 +111,11 @@ def train(args):
             content_loss = args.content_weight * mse_loss(features_y.relu2_2, features_x.relu2_2)
 
             style_loss = 0.
-            for ft_y, gm_s in zip(features_y, gram_style):
+            for ft_y, gm_s1, gm_s2 in zip(features_y, gram_style, gram_style2):
                 gm_y = utils.gram_matrix(ft_y)
-                style_loss += mse_loss(gm_y, gm_s[:n_batch, :, :])
+                style_loss += mse_loss(gm_y, gm_s1[:n_batch, :, :])
+                style_loss += mse_loss(gm_y, gm_s2[:n_batch, :, :])
+
             style_loss *= args.style_weight
 
             total_loss = content_loss + style_loss
@@ -186,11 +198,13 @@ def main():
                                        "containing another folder with all the training images")
     train_arg_parser.add_argument("--style-image", type=str, default="images/style-images/mosaic.jpg",
                                   help="path to style-image")
+    train_arg_parser.add_argument("--style-image2", type=str, default="images/style-images/mosaic.jpg",
+                                  help="path to style-image")
     train_arg_parser.add_argument("--save-model-dir", type=str, required=True,
                                   help="path to folder where trained model will be saved.")
     train_arg_parser.add_argument("--checkpoint-model-dir", type=str, default=None,
                                   help="path to folder where checkpoints of trained models will be saved")
-    train_arg_parser.add_argument("--image-size", type=int, default=256,
+    train_arg_parser.add_argument("--image-size", type=int, default=224,
                                   help="size of training images, default is 256 X 256")
     train_arg_parser.add_argument("--style-size", type=int, default=None,
                                   help="size of style-image, default is the original size of style image")
@@ -200,7 +214,7 @@ def main():
                                   help="random seed for training")
     train_arg_parser.add_argument("--content-weight", type=float, default=1e5,
                                   help="weight for content-loss, default is 1e5")
-    train_arg_parser.add_argument("--style-weight", type=float, default=1e10,
+    train_arg_parser.add_argument("--style-weight", type=float, default=5e9,
                                   help="weight for style-loss, default is 1e10")
     train_arg_parser.add_argument("--lr", type=float, default=1e-3,
                                   help="learning rate, default is 1e-3")
