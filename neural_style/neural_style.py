@@ -204,16 +204,10 @@ def main():
                                   help="path to folder where trained model will be saved.")
     train_arg_parser.add_argument("--checkpoint-model-dir", type=str, default=None,
                                   help="path to folder where checkpoints of trained models will be saved")
-    train_arg_parser.add_argument("--image-size", type=int, default=224,
-<<<<<<< HEAD
-                                  help="size of training images, default is 256 X 256")
-    train_arg_parser.add_argument("--style-size", type=int, default=None,
-                                  help="size of style-image, default is the original size of style image")
-=======
+    train_arg_parser.add_argument("--image-size", type=int, default=224, 
                                   help="size of training images, default is 224 X 224")
     train_arg_parser.add_argument("--style-size", type=int, default=224,
                                   help="size of style-image, default is 224 X 224")
->>>>>>> 2style
     train_arg_parser.add_argument("--cuda", type=int, required=True,
                                   help="set it to 1 for running on GPU, 0 for CPU")
     train_arg_parser.add_argument("--seed", type=int, default=42,
